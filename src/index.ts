@@ -26,6 +26,16 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
+// ---------------------------------------------------------------------------
+// Avertissement juridique
+// ---------------------------------------------------------------------------
+
+const DISCLAIMER = '\n\n---\n*Estimation indicative uniquement. Ne constitue pas un conseil fiscal ou juridique. Consultez un expert-comptable ou un avocat. Voir [TERMS.md](https://github.com/thomasgorisse/french-admin-mcp/blob/main/TERMS.md).*';
+
+function addDisclaimer(text: string): string {
+  return text + DISCLAIMER;
+}
+
 // ─── simuler_impots ───────────────────────────────────────────────────
 server.tool(
   "simuler_impots",
@@ -50,7 +60,7 @@ server.tool(
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify(result, null, 2),
+            text: addDisclaimer(JSON.stringify(result, null, 2)),
           },
         ],
       };
@@ -78,7 +88,7 @@ server.tool(
   async (args) => {
     try {
       const result = calculerChargesAE(args);
-      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(result, null, 2)) }] };
     } catch (e: any) {
       return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
     }
@@ -118,7 +128,7 @@ server.tool(
   async (args) => {
     try {
       const result = genererFacture(args);
-      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(result, null, 2)) }] };
     } catch (e: any) {
       return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
     }
@@ -147,7 +157,7 @@ server.tool(
         ...args,
         trimestre: args.trimestre as 1 | 2 | 3 | 4,
       });
-      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(result, null, 2)) }] };
     } catch (e: any) {
       return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
     }
@@ -171,7 +181,7 @@ server.tool(
   async (args) => {
     try {
       const result = estimerAidesCAF(args);
-      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(result, null, 2)) }] };
     } catch (e: any) {
       return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
     }
@@ -202,7 +212,7 @@ server.tool(
         ],
       };
     }
-    return { content: [{ type: "text" as const, text: JSON.stringify(procedure, null, 2) }] };
+    return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(procedure, null, 2)) }] };
   }
 );
 
@@ -248,7 +258,7 @@ server.tool(
         pieces_jointes: args.piecesJointes,
         recommande: args.recommande,
       });
-      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(result, null, 2)) }] };
     } catch (e: any) {
       return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
     }
@@ -284,9 +294,10 @@ server.tool(
       content: [
         {
           type: "text" as const,
-          text:
+          text: addDisclaimer(
             JSON.stringify(convention, null, 2) +
-            "\n\n⚠️ Informations indicatives. Vérifiez toujours sur legifrance.gouv.fr pour les textes en vigueur.",
+            "\n\n⚠️ Informations indicatives. Vérifiez toujours sur legifrance.gouv.fr pour les textes en vigueur."
+          ),
         },
       ],
     };
@@ -309,7 +320,7 @@ server.tool(
   async (args) => {
     try {
       const result = simulerRetraite(args);
-      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text" as const, text: addDisclaimer(JSON.stringify(result, null, 2)) }] };
     } catch (e: any) {
       return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
     }
