@@ -1,5 +1,7 @@
 # french-admin-mcp
 
+> **Avertissement :** Estimation indicative uniquement. Ne constitue pas un conseil fiscal ou juridique. Consultez un expert-comptable ou un avocat. Tous les résultats (simulations d'impôts, charges, aides, factures, courriers) doivent être vérifiés indépendamment. Voir [TERMS.md](./TERMS.md) et [PRIVACY.md](./PRIVACY.md).
+
 Serveur MCP (Model Context Protocol) pour **l'administration francaise**.
 Aide les citoyens et entreprises a naviguer la bureaucratie francaise avec l'IA.
 
