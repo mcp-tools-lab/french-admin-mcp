@@ -1,0 +1,60 @@
+{
+  "name": "french-admin-mcp",
+  "version": "1.0.0",
+  "description": "Serveur MCP pour l'administration française — impôts, URSSAF, CAF, factures, courriers administratifs",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "french-admin-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "france",
+    "impots",
+    "urssaf",
+    "caf",
+    "auto-entrepreneur",
+    "administration",
+    "facture",
+    "charges-sociales",
+    "retraite",
+    "convention-collective",
+    "ai",
+    "claude",
+    "model-context-protocol"
+  ],
+  "author": "Thomas Gorisse <thomas.gorisse@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thomasgorisse/french-admin-mcp.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "server.json"
+  ]
+}
