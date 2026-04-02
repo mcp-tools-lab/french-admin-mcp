@@ -1,6 +1,6 @@
 {
   "name": "french-admin-mcp",
-  "version": "2.1.0",
+  "version": "2.1.4",
   "description": "Serveur MCP pour l'administration française — impôts, URSSAF, CAF, chômage (ARE), licenciement, CPF, factures, courriers administratifs. Barèmes 2026.",
   "type": "module",
   "main": "dist/index.js",
@@ -48,14 +48,14 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.2"
+    "vitest": "^3.1.4"
   },
   "files": [
     "dist",
@@ -63,5 +63,15 @@
     "LICENSE",
     "server.json"
   ],
-  "mcpName": "io.github.ThomasGorisse/french-admin-mcp"
+  "mcpName": "io.github.ThomasGorisse/french-admin-mcp",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/sceneview"
+    },
+    {
+      "type": "polar",
+      "url": "https://polar.sh/sceneview"
+    }
+  ]
 }
