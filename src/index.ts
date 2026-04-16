@@ -26,10 +26,17 @@ import { verifierDroitsFormation } from "./tools/verifier-droits-formation.js";
 import { simulerAidesLogement } from "./tools/simuler-aides-logement.js";
 import { calculerIndemniteConges } from "./tools/calculer-indemnites-conges.js";
 import { verifierDroitsChomageDemission } from "./tools/verifier-droits-chomage-demission.js";
+import {
+  rechercherEntreprise,
+  detailsEntreprise,
+  validerAdresse,
+  geocodageInverse,
+  infoCommune,
+} from "./tools/api-gouv.js";
 
 const server = new McpServer({
   name: "french-admin-mcp",
-  version: "2.1.0",
+  version: "2.2.0",
 });
 
 // ---------------------------------------------------------------------------
@@ -643,6 +650,250 @@ function verifierEligibiliteRSA(args: {
     ],
   };
 }
+
+// ─── rechercher_entreprise ───────────────────────────────────────────
+server.tool(
+  "rechercher_entreprise",
+  "Recherche une entreprise française par nom, activité ou localisation via l'API SIRENE (INSEE). Retourne SIREN, SIRET, adresse du siège, forme juridique, date de création, effectifs. Données officielles et à jour.",
+  {
+    recherche: z.string().describe("Nom de l'entreprise, mot-clé ou activité à rechercher"),
+    codePostal: z.string().optional().describe("Filtrer par code postal (ex : 75001)"),
+    activitePrincipale: z.string().optional().describe("Filtrer par code NAF/APE (ex : 62.01Z pour programmation informatique)"),
+    page: z.number().optional().describe("Numéro de page (défaut : 1)"),
+    parPage: z.number().optional().describe("Nombre de résultats par page (défaut : 5, max : 25)"),
+  },
+  async (args) => {
+    try {
+      const result = await rechercherEntreprise(args);
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (e: any) {
+      return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
+    }
+  }
+);
+
+// ─── details_entreprise ─────────────────────────────────────────────
+server.tool(
+  "details_entreprise",
+  "Récupère les détails complets d'une entreprise française à partir de son numéro SIREN (9 chiffres) ou SIRET (14 chiffres). Retourne raison sociale, adresse, forme juridique, activité, effectifs, état administratif. Données SIRENE officielles.",
+  {
+    sirenOuSiret: z.string().describe("Numéro SIREN (9 chiffres) ou SIRET (14 chiffres)"),
+  },
+  async (args) => {
+    try {
+      const result = await detailsEntreprise(args);
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (e: any) {
+      return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
+    }
+  }
+);
+
+// ─── valider_adresse ────────────────────────────────────────────────
+server.tool(
+  "valider_adresse",
+  "Valide et géocode une adresse française via la Base Adresse Nationale (BAN). Retourne l'adresse normalisée, les coordonnées GPS, le score de confiance, la commune et le code postal. Utile pour vérifier une adresse avant envoi de courrier ou facturation.",
+  {
+    adresse: z.string().describe("Adresse à rechercher (ex : « 20 avenue de Ségur Paris »)"),
+    codePostal: z.string().optional().describe("Code postal pour affiner la recherche"),
+    type: z.string().optional().describe("Type de résultat : housenumber, street, locality, municipality"),
+    limite: z.number().optional().describe("Nombre maximum de résultats (défaut : 5)"),
+  },
+  async (args) => {
+    try {
+      const result = await validerAdresse(args);
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (e: any) {
+      return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
+    }
+  }
+);
+
+// ─── geocodage_inverse ──────────────────────────────────────────────
+server.tool(
+  "geocodage_inverse",
+  "Trouve l'adresse française correspondant à des coordonnées GPS (géocodage inverse). Retourne l'adresse complète, la commune, le code postal. Basé sur la Base Adresse Nationale (BAN).",
+  {
+    longitude: z.number().describe("Longitude (ex : 2.3088 pour Paris)"),
+    latitude: z.number().describe("Latitude (ex : 48.8534 pour Paris)"),
+  },
+  async (args) => {
+    try {
+      const result = await geocodageInverse(args);
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (e: any) {
+      return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
+    }
+  }
+);
+
+// ─── info_commune ───────────────────────────────────────────────────
+server.tool(
+  "info_commune",
+  "Informations sur une commune française : population, superficie, codes postaux, département, région. Recherche par nom, code postal ou code INSEE. Données officielles de la Geo API.",
+  {
+    nom: z.string().optional().describe("Nom de la commune (ex : « Marseille »)"),
+    codePostal: z.string().optional().describe("Code postal (ex : « 13001 »)"),
+    codeInsee: z.string().optional().describe("Code INSEE de la commune (ex : « 13055 »)"),
+    limite: z.number().optional().describe("Nombre maximum de résultats (défaut : 5)"),
+  },
+  async (args) => {
+    try {
+      const result = await infoCommune(args);
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+    } catch (e: any) {
+      return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
+    }
+  }
+);
+
+// ─── verifier_siret ─────────────────────────────────────────────────
+/**
+ * Validates a SIRET (14 digits) or SIREN (9 digits) using:
+ * 1. Format check (numeric, correct length)
+ * 2. Luhn algorithm (same as used by INSEE)
+ * 3. Live SIRENE API lookup for business status
+ */
+function luhnCheck(num: string): boolean {
+  let sum = 0;
+  let alternate = false;
+  for (let i = num.length - 1; i >= 0; i--) {
+    let n = parseInt(num[i], 10);
+    if (alternate) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    sum += n;
+    alternate = !alternate;
+  }
+  return sum % 10 === 0;
+}
+
+server.tool(
+  "verifier_siret",
+  "Vérifie la validité d'un numéro SIRET (14 chiffres) ou SIREN (9 chiffres) français. Effectue trois vérifications : format, algorithme de Luhn (contrôle INSEE officiel), et consultation de l'API SIRENE pour confirmer l'état de l'établissement (actif/fermé). Utile pour valider un partenaire commercial, un client ou un fournisseur avant de signer un contrat.",
+  {
+    numero: z
+      .string()
+      .describe("Numéro SIRET (14 chiffres) ou SIREN (9 chiffres) à vérifier, espaces optionnels tolérés"),
+    verifierEtat: z
+      .boolean()
+      .optional()
+      .describe("Consulter l'API SIRENE pour vérifier l'état administratif de l'entreprise (défaut : true)"),
+  },
+  async (args) => {
+    try {
+      const cleaned = args.numero.replace(/[\s\-\.]/g, "");
+      const verifierEtat = args.verifierEtat !== false;
+
+      // 1. Format check
+      if (!/^\d{9}$/.test(cleaned) && !/^\d{14}$/.test(cleaned)) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              valide: false,
+              numero: args.numero,
+              type: null,
+              etapeEchouee: "format",
+              message: `Le numéro « ${args.numero} » n'est pas valide : doit contenir 9 chiffres (SIREN) ou 14 chiffres (SIRET), espaces inclus.`,
+            }, null, 2),
+          }],
+        };
+      }
+
+      const type = cleaned.length === 9 ? "SIREN" : "SIRET";
+
+      // 2. Luhn algorithm
+      const luhnValid = luhnCheck(cleaned);
+      if (!luhnValid) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              valide: false,
+              numero: cleaned,
+              type,
+              etapeEchouee: "luhn",
+              message: `Le ${type} « ${cleaned} » échoue au contrôle de clé (algorithme de Luhn). Ce numéro n'existe pas dans le répertoire INSEE.`,
+            }, null, 2),
+          }],
+        };
+      }
+
+      // 3. SIRENE API lookup
+      if (!verifierEtat) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              valide: true,
+              numero: cleaned,
+              type,
+              formatOk: true,
+              luhnOk: true,
+              etatVerifie: false,
+              message: `Le ${type} « ${cleaned} » est valide (format + clé de contrôle Luhn). État non vérifié (verifierEtat=false).`,
+            }, null, 2),
+          }],
+        };
+      }
+
+      const result = await detailsEntreprise({ sirenOuSiret: cleaned });
+
+      if (!result.trouve) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              valide: false,
+              numero: cleaned,
+              type,
+              formatOk: true,
+              luhnOk: true,
+              etatVerifie: true,
+              trouve: false,
+              message: `Le ${type} « ${cleaned} » a un format valide mais n'est pas trouvé dans le répertoire SIRENE. Il peut s'agir d'un numéro attribué mais jamais enregistré, ou d'une entreprise très récente.`,
+            }, null, 2),
+          }],
+        };
+      }
+
+      const actif = result.etatAdministratif === "A";
+      return {
+        content: [{
+          type: "text" as const,
+          text: addDisclaimer(JSON.stringify({
+            valide: actif,
+            numero: cleaned,
+            type,
+            formatOk: true,
+            luhnOk: true,
+            etatVerifie: true,
+            trouve: true,
+            actif,
+            etatAdministratif: result.etatAdministratif,
+            entreprise: {
+              nomComplet: result.nomComplet,
+              raisonSociale: result.raisonSociale,
+              siren: result.siren,
+              natureJuridique: result.natureJuridique,
+              activitePrincipale: result.activitePrincipale,
+              dateCreation: result.dateCreation,
+              siege: result.siege,
+            },
+            message: actif
+              ? `✅ ${type} valide — ${result.nomComplet} est une entreprise ACTIVE.`
+              : `⚠️ ${type} valide mais ${result.nomComplet} est FERMÉE (état : ${result.etatAdministratif}).`,
+            source: "API Recherche d'entreprises (SIRENE) — recherche-entreprises.api.gouv.fr",
+          }, null, 2)),
+        }],
+      };
+    } catch (e: any) {
+      return { content: [{ type: "text" as const, text: `Erreur : ${e.message}` }], isError: true };
+    }
+  }
+);
 
 // ─── Start server ─────────────────────────────────────────────────────
 async function main() {
