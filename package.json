@@ -1,6 +1,6 @@
 {
   "name": "french-admin-mcp",
-  "version": "2.1.6",
+  "version": "2.2.1",
   "description": "Serveur MCP pour l'administration française — impôts, URSSAF, CAF, chômage (ARE), licenciement, CPF, factures, courriers administratifs. Barèmes 2026.",
   "type": "module",
   "main": "dist/index.js",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
